@@ -1,60 +1,42 @@
 package com.project.server;
 
-import com.google.cloud.vision.v1.AnnotateImageRequest;
-import com.google.cloud.vision.v1.AnnotateImageResponse;
-import com.google.cloud.vision.v1.BatchAnnotateImagesResponse;
-import com.google.cloud.vision.v1.EntityAnnotation;
-import com.google.cloud.vision.v1.Feature;
-import com.google.cloud.vision.v1.Image;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
-import com.google.cloud.vision.v1.ImageSource;
+import com.google.cloud.vision.v1.Image;
+import com.google.cloud.vision.v1.AnnotateImageRequest;
+import com.google.cloud.vision.v1.Feature;
+import com.google.cloud.vision.v1.TextAnnotation;
+import com.google.protobuf.ByteString;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StopWatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class VisionService {
+    private static final Logger logger = LoggerFactory.getLogger(VisionService.class);
 
-    public static String execute(String url) throws IOException {
-        StopWatch totalTime = new StopWatch();
-        totalTime.start();
+    public String extractTextFromImage(byte[] imageBytes) throws IOException {
+        try (ImageAnnotatorClient vision = ImageAnnotatorClient.create()) {
+            ByteString imgBytes = ByteString.copyFrom(imageBytes);
 
-        List<AnnotateImageRequest> requests = new ArrayList<>();
+            Image img = Image.newBuilder().setContent(imgBytes).build();
+            Feature feat = Feature.newBuilder().setType(Feature.Type.TEXT_DETECTION).build();
+            AnnotateImageRequest request = AnnotateImageRequest.newBuilder()
+                    .addFeatures(feat)
+                    .setImage(img)
+                    .build();
+            List<AnnotateImageRequest> requests = List.of(request);
 
-        ImageSource imgSource = ImageSource.newBuilder().setImageUri(url).build();
-        Image img = Image.newBuilder().setSource(imgSource).build();
-        Feature feat = Feature.newBuilder().setType(Feature.Type.TEXT_DETECTION).build();
-        AnnotateImageRequest request =
-                AnnotateImageRequest.newBuilder().addFeatures(feat).setImage(img).build();
-        requests.add(request);
+            TextAnnotation text = vision.batchAnnotateImages(requests)
+                    .getResponses(0)
+                    .getFullTextAnnotation();
 
-        try (ImageAnnotatorClient client = ImageAnnotatorClient.create()) {
-            BatchAnnotateImagesResponse response = client.batchAnnotateImages(requests);
-            List<AnnotateImageResponse> responses = response.getResponsesList();
+            String extractedText = text.getText();
+            logger.info("Extracted Text: {}", extractedText); // 추출된 텍스트 로그 출력
 
-            StringBuilder result = new StringBuilder();
-            for (AnnotateImageResponse res : responses) {
-                if (res.hasError()) {
-                    System.out.format("Error: %s%n", res.getError().getMessage());
-                    return null;
-                }
-
-                for (EntityAnnotation annotation : res.getTextAnnotationsList()) {
-                    result.append(annotation.getDescription()).append(" ");
-                }
-            }
-
-            totalTime.stop();
-            System.out.println("Total Time : " + totalTime.getTotalTimeMillis() + "ms");
-
-            return result.toString();
-        }
-        catch (Exception exception) {
-            return exception.getMessage();
+            return text.getText();
         }
     }
-
 }
