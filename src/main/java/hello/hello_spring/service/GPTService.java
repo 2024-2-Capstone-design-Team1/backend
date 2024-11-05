@@ -23,7 +23,7 @@ public class GPTService {
 
     public String getGPTResponse(String prompt) {
         // 기본 메시지와 사용자 입력을 결합
-        String combinedPrompt = prompt + "이 증상일 때 먹어야 하는 약을 알려줘 약 목록: 형식으로 약 이름들만";
+        String combinedPrompt = prompt + "이 증상일 때 먹어야 하는 상비약을 알려줘 약 목록: 형식으로 약 이름들만";
 
         // 결합된 프롬프트로 GPTRequest 생성
         GPTRequest request = new GPTRequest(model, combinedPrompt, 1, 256, 1, 0, 0);
