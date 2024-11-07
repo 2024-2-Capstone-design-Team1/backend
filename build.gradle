@@ -37,7 +37,8 @@ dependencies {
 		exclude group: 'com.google.protobuf', module: 'protobuf-java'
 	}
 	implementation platform('com.google.cloud:libraries-bom:26.1.5')
-	implementation 'com.google.protobuf:protobuf-java:3.21.12'
+	implementation 'com.google.protobuf:protobuf-java:3.23.0' // 필요한 버전에 맞게 조정
+
 
 
 	// json
@@ -51,6 +52,11 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-gcp-storage:1.2.8.RELEASE'
 	implementation 'com.google.cloud:google-cloud-vision:3.34.0'
 }
+
+jar {
+	enabled = false
+}
+
 
 tasks.named('test') {
 	useJUnitPlatform()
