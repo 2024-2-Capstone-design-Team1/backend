@@ -1,8 +1,9 @@
 package com.project.server.controller;
 
-import com.project.server.VisionService;
 import com.project.server.domain.Medicine;
+import com.project.server.service.CombinedService;
 import com.project.server.service.MedicineService;
+import com.project.server.service.VisionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,9 @@ public class MedicineController {
         public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
             return String.format("Hello  %s!",name);
         }
+
+        @GetMapping("/hi")
+        public String helloWord(){return "heelo world";}
 
         //상비약 등록
         @PostMapping("/add")
@@ -76,6 +80,7 @@ public class MedicineController {
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
+
 
 
 
