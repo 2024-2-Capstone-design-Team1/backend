@@ -33,7 +33,7 @@ public class MedicineController {
             return String.format("Hello  %s!",name);
         }
 
-        @GetMapping("/hi")
+        @GetMapping("")
         public String helloWord(){return "heelo world";}
 
         //상비약 등록
