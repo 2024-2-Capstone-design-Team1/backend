@@ -42,14 +42,16 @@ public class CombinedService {
             String timing = extractValue(responseParts, "복용시간");
             String totalDays = extractValue(responseParts, "총일수").replaceAll("[^0-9]", ""); // 숫자만 추출
 
+            if (prescriptionRepository.existsByHospitalName(hospitalName)) {
+                return "이미 등록된 약입니다.";
+            }
+
             // 전체 약 봉지의 개수 계산 및 아침, 점심, 저녁 분배
             int dailyDosesCount = dailyDoses.isEmpty() ? 0 : Integer.parseInt(dailyDoses);
             int totalDaysCount = totalDays.isEmpty() ? 0 : Integer.parseInt(totalDays);
             int totalBags = dailyDosesCount * totalDaysCount;
             int perPeriodDoses = totalBags > 0 ? totalBags / 3 : 0;
 
-            String doseFrequency = "아침: " + perPeriodDoses + "개 남음\n점심: " + perPeriodDoses + "개 남음\n저녁: " + perPeriodDoses + "개 남음";
-            String totalDoseInfo = "총 투약횟수: " + totalBags;
 
             Prescription prescription = Prescription.builder()
                     .hospitalName(hospitalName)
@@ -62,7 +64,7 @@ public class CombinedService {
                     .build();
 
             prescriptionRepository.save(prescription);
-            return "병원이름: " + hospitalName + "\n1일 총 투약횟수: " + dailyDoses + "\n복용시간: " + timing + "\n총일수: " + totalDays + "\n" + doseFrequency + "\n" + totalDoseInfo;
+            return hospitalName;
         }
 
         // 3. 처방약 로직이 실패한 경우에만 상비약 로직 실행
@@ -71,6 +73,10 @@ public class CombinedService {
 
         // 응답에서 "상비약 이름: " 이후의 텍스트만 추출
         String medicineName = gptResponse.replaceFirst("상비약 이름: ", "").split(",")[0].trim();
+
+        if (medicineRepository.existsByName(medicineName)) {
+            return "이미 등록된 약입니다.";
+        }
 
         if (!gptResponse.contains("해당 증상에 맞는 약이 없습니다")) {
             // 상비약 로직 실행
