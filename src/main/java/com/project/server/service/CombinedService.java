@@ -31,8 +31,10 @@ public class CombinedService {
         String extractedText = visionService.extractTextFromImage(imageBytes);
 
         // 2. 처방약 로직을 먼저 시도
-        String prompt = extractedText + "\n\n위의 내용을 기반으로 다음 항목을 추출해줘:\n병원이름: 병원이름,\n1일 총 투약횟수: 투약횟수 (숫자만),\n복용시간: (식전/식후),\n총일수: 일수 (숫자만)";
+        String prompt = extractedText + "\n\n위의 내용을 기반으로 다음 항목을 추출해줘:\n병원이름: 병원이름\n1일 총 투약횟수: 투약횟수 (숫자만)\n복용시간: (식전/식후)\n총일수: 일수 (숫자만)";
         String gptResponse = gptService.getGPTResponse(prompt);
+
+        System.out.println(gptResponse);
 
         if (gptResponse.contains("병원이름:") && gptResponse.contains("총일수:")) {
             // 처방약 로직 실행
@@ -72,7 +74,7 @@ public class CombinedService {
         gptResponse = gptService.getGPTResponse(prompt);
 
         // 응답에서 "상비약 이름: " 이후의 텍스트만 추출
-        String medicineName = gptResponse.replaceFirst("상비약 이름: ", "").split(",")[0].trim();
+        String medicineName = gptResponse.replaceFirst("상비약 이름: ", "").split("\\(")[0].trim();
 
         if (medicineRepository.existsByName(medicineName)) {
             return "이미 등록된 약입니다.";

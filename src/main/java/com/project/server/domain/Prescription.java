@@ -5,37 +5,39 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Table(name = "Prescription")
 @Entity
+@Table(name = "prescription")
 @Getter
+@Setter // Setter 추가
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Prescription {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false)
-    private long id;
+    private Long id;
 
     @Column(name = "hospital_name", nullable = false)
     private String hospitalName;
 
-    @Column(name = "morning", nullable = true)
+    @Column(name = "morning")
     private String morning;
 
-    @Column(name = "lunch", nullable = true)
+    @Column(name = "lunch")
     private String lunch;
 
-    @Column(name = "dinner", nullable = true)
+    @Column(name = "dinner")
     private String dinner;
 
-    @Column(name = "timing", nullable = true)
+    @Column(name = "timing")
     private String timing;
 
-    @Column(name = "total_days", nullable = true)
+    @Column(name = "total_days")
     private String totalDays;
 
-    @Column(name = "description", nullable = true)
+    @Column(name = "description")
     private String description;
 
     @Builder
