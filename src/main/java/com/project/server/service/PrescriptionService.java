@@ -2,6 +2,7 @@ package com.project.server.service;
 
 import com.project.server.domain.Prescription;
 import com.project.server.repository.PrescriptionRepository;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,65 +22,98 @@ public class PrescriptionService {
 
     // 이미지 처리 및 병원 이름 기반 처방약 정보 확인
     public String processPrescription(byte[] imageBytes) {
-        // 1. 이미지에서 텍스트 추출
-        String extractedText = visionService.extractTextFromImage(imageBytes);
+        JSONObject responseJson = new JSONObject();
 
-        // 2. GPT를 사용해 병원 이름 추출
-        String prompt = extractedText + "\n\n위 내용을 기반으로 병원 이름만 반환해줘. 예시 형식: 병원이름: [병원명]";
-        String gptResponse = gptService.getGPTResponse(prompt);
+        try {
+            // 1. 이미지에서 텍스트 추출
+            String extractedText = visionService.extractTextFromImage(imageBytes);
 
-        String hospitalName = extractValue(gptResponse, "병원이름");
-        if (hospitalName.isEmpty()) {
-            return "병원 이름을 인식할 수 없습니다. 다시 시도해주세요.";
+            // 2. GPT를 사용해 병원 이름 추출
+            String prompt = extractedText + "\n\n위 내용을 기반으로 병원 이름만 반환해줘. 예시 형식: 병원이름: [병원명]";
+            String gptResponse = gptService.getGPTResponse(prompt);
+
+            String hospitalName = extractValue(gptResponse, "병원이름");
+            if (hospitalName.isEmpty()) {
+                responseJson.put("status", "error");
+                responseJson.put("error_message", "병원 이름을 인식할 수 없습니다. 다시 시도해주세요.");
+                return responseJson.toString();
+            }
+
+            // 3. 병원 이름으로 처방약 검색
+            Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
+            if (prescription == null) {
+                responseJson.put("status", "error");
+                responseJson.put("error_message", hospitalName + " 병원의 처방약이 데이터베이스에 없습니다.");
+                return responseJson.toString();
+            }
+
+            // 4. 처방약 정보 JSON 반환
+            int totalBags = parseIntSafe(prescription.getMorning()) +
+                    parseIntSafe(prescription.getLunch()) +
+                    parseIntSafe(prescription.getDinner());
+
+            responseJson.put("status", "success");
+            responseJson.put("hospital_name", prescription.getHospitalName());
+            responseJson.put("total_days", prescription.getTotalDays());
+            responseJson.put("total_bags", totalBags);
+            responseJson.put("message", prescription.getHospitalName() +
+                    " 처방약입니다. 아침, 점심, 저녁 식후 30분 " +
+                    prescription.getTotalDays() + "일치로 총 " + totalBags + "봉투로 이루어져 있습니다.");
+            return responseJson.toString();
+
+        } catch (Exception e) {
+            responseJson.put("status", "error");
+            responseJson.put("error_message", "처리 중 오류가 발생했습니다: " + e.getMessage());
+            return responseJson.toString();
         }
-
-        // 3. 병원 이름으로 처방약 검색
-        Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
-        if (prescription == null) {
-            return hospitalName + " 병원의 처방약이 데이터베이스에 없습니다.";
-        }
-
-        // 4. 처방약 정보 반환
-        int totalBags = parseIntSafe(prescription.getMorning()) +
-                parseIntSafe(prescription.getLunch()) +
-                parseIntSafe(prescription.getDinner());
-        return prescription.getHospitalName() + " 처방약입니다. 아침, 점심, 저녁 식후 30분 " +
-                prescription.getTotalDays() + "일치로 총 " + totalBags + "봉투로 이루어져 있습니다.";
     }
 
     // 복용 상태 업데이트
     public String updateDosage(String hospitalName, String timeOfDay) {
-        Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
+        JSONObject responseJson = new JSONObject();
 
-        if (prescription == null) {
-            return "해당 병원의 처방약이 없습니다.";
+        try {
+            Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
+
+            if (prescription == null) {
+                responseJson.put("status", "error");
+                responseJson.put("error_message", "해당 병원의 처방약이 없습니다.");
+                return responseJson.toString();
+            }
+
+            // 해당 시간대 복용 개수 감소
+//            int remainingDoses = decreaseDosage(prescription, timeOfDay);
+
+            // 남은 봉투 계산
+            int morningRemaining = parseIntSafe(prescription.getMorning());
+            int lunchRemaining = parseIntSafe(prescription.getLunch());
+            int dinnerRemaining = parseIntSafe(prescription.getDinner());
+            int totalRemainingBags = morningRemaining + lunchRemaining + dinnerRemaining;
+
+            // 데이터베이스 저장
+            prescriptionRepository.save(prescription);
+
+            // 결과 JSON 반환
+            responseJson.put("status", "success");
+            responseJson.put("hospital_name", prescription.getHospitalName());
+            responseJson.put("time_of_day", timeOfDay);
+            responseJson.put("remaining_bags", totalRemainingBags);
+            responseJson.put("message", String.format(
+                    "약 복용 완료. %s 복용 후 남은 봉투: 총 %d개 (아침: %d개, 점심: %d개, 저녁: %d개)",
+                    timeOfDay, totalRemainingBags, morningRemaining, lunchRemaining, dinnerRemaining
+            ));
+            return responseJson.toString();
+
+        } catch (Exception e) {
+            responseJson.put("status", "error");
+            responseJson.put("error_message", "처리 중 오류가 발생했습니다: " + e.getMessage());
+            return responseJson.toString();
         }
-
-        // 해당 시간대 복용 개수 감소
-        int remainingDoses = decreaseDosage(prescription, timeOfDay);
-
-        // 남은 봉투 계산
-        int morningRemaining = parseIntSafe(prescription.getMorning());
-        int lunchRemaining = parseIntSafe(prescription.getLunch());
-        int dinnerRemaining = parseIntSafe(prescription.getDinner());
-
-        // 총 남은 봉투 계산
-        int totalRemainingBags = morningRemaining + lunchRemaining + dinnerRemaining;
-
-        // 데이터베이스 저장
-        prescriptionRepository.save(prescription);
-
-        // 결과 반환
-        return String.format(
-                "약 복용 완료. %s 복용 후 남은 봉투: 총 %d개 (아침: %d개, 점심: %d개, 저녁: %d개)",
-                timeOfDay, totalRemainingBags, morningRemaining, lunchRemaining, dinnerRemaining
-        );
     }
-
 
     // 특정 시간대 복용량 감소
     private int decreaseDosage(Prescription prescription, String timeOfDay) {
-        int remainingDoses = 0;
+        int remainingDoses;
 
         switch (timeOfDay.toLowerCase()) {
             case "morning":
