@@ -4,9 +4,12 @@ import com.project.server.domain.Medicine;
 import com.project.server.domain.Prescription;
 import com.project.server.repository.MedicineRepository;
 import com.project.server.repository.PrescriptionRepository;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class CombinedService {
@@ -24,8 +27,8 @@ public class CombinedService {
         this.prescriptionRepository = prescriptionRepository;
     }
 
-    public String processImageWithGPT(byte[] imageBytes) {
-        JSONObject responseJson = new JSONObject(); // JSON 응답 생성
+    public ResponseEntity<Map<String, Object>> processImageWithGPT(byte[] imageBytes) {
+        Map<String, Object> response = new HashMap<>();
 
         try {
             // 1. 이미지에서 텍스트 추출
@@ -44,11 +47,11 @@ public class CombinedService {
                 String totalDays = extractValue(responseParts, "총일수").replaceAll("[^0-9]", "");
 
                 if (prescriptionRepository.existsByHospitalName(hospitalName)) {
-                    responseJson.put("status", "success");
-                    responseJson.put("type", "prescription");
-                    responseJson.put("name", hospitalName);
-                    responseJson.put("message", "이미 등록됨");
-                    return responseJson.toString();
+                    response.put("status", "success");
+                    response.put("type", "prescription");
+                    response.put("name", hospitalName);
+                    response.put("message", "이미 등록됨");
+                    return ResponseEntity.ok(response);
                 }
 
                 // 약 봉지 수 계산 및 분배
@@ -69,11 +72,11 @@ public class CombinedService {
                         .build();
                 prescriptionRepository.save(prescription);
 
-                responseJson.put("status", "success");
-                responseJson.put("type", "prescription");
-                responseJson.put("name", hospitalName);
-                responseJson.put("message", "등록됨.");
-                return responseJson.toString();
+                response.put("status", "success");
+                response.put("type", "prescription");
+                response.put("name", hospitalName);
+                response.put("message", "등록됨");
+                return ResponseEntity.ok(response);
             }
 
             // 3. 상비약 로직 실행
@@ -83,11 +86,11 @@ public class CombinedService {
             String medicineName = gptResponse.replaceFirst("상비약 이름: ", "").split("\\(")[0].trim();
 
             if (medicineRepository.existsByName(medicineName)) {
-                responseJson.put("status", "success");
-                responseJson.put("type", "medicine");
-                responseJson.put("name", medicineName);
-                responseJson.put("message", "이미 등록됨");
-                return responseJson.toString();
+                response.put("status", "success");
+                response.put("type", "medicine");
+                response.put("name", medicineName);
+                response.put("message", "이미 등록됨");
+                return ResponseEntity.ok(response);
             }
 
             // 상비약 DB 저장
@@ -97,16 +100,16 @@ public class CombinedService {
                     .build();
             medicineRepository.save(medicine);
 
-            responseJson.put("status", "success");
-            responseJson.put("type", "medicine");
-            responseJson.put("name", medicineName);
-            responseJson.put("message", "등록됨");
-            return responseJson.toString();
+            response.put("status", "success");
+            response.put("type", "medicine");
+            response.put("name", medicineName);
+            response.put("message", "등록됨");
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            responseJson.put("status", "error");
-            responseJson.put("error_message", e.getMessage());
-            return responseJson.toString();
+            response.put("status", "error");
+            response.put("error_message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 

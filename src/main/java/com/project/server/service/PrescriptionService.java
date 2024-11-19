@@ -2,9 +2,11 @@ package com.project.server.service;
 
 import com.project.server.domain.Prescription;
 import com.project.server.repository.PrescriptionRepository;
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class PrescriptionService {
@@ -13,7 +15,6 @@ public class PrescriptionService {
     private final GPTService gptService;
     private final PrescriptionRepository prescriptionRepository;
 
-    @Autowired
     public PrescriptionService(VisionService visionService, GPTService gptService, PrescriptionRepository prescriptionRepository) {
         this.visionService = visionService;
         this.gptService = gptService;
@@ -21,8 +22,8 @@ public class PrescriptionService {
     }
 
     // 이미지 처리 및 병원 이름 기반 처방약 정보 확인
-    public String processPrescription(byte[] imageBytes) {
-        JSONObject responseJson = new JSONObject();
+    public Map<String, Object> processPrescription(byte[] imageBytes) {
+        Map<String, Object> response = new HashMap<>();
 
         try {
             // 1. 이미지에서 텍스트 추출
@@ -34,17 +35,17 @@ public class PrescriptionService {
 
             String hospitalName = extractValue(gptResponse, "병원이름");
             if (hospitalName.isEmpty()) {
-                responseJson.put("status", "error");
-                responseJson.put("error_message", "병원 이름을 인식할 수 없습니다. 다시 시도해주세요.");
-                return responseJson.toString();
+                response.put("status", "error");
+                response.put("error_message", "병원 이름을 인식할 수 없습니다. 다시 시도해주세요.");
+                return response;
             }
 
             // 3. 병원 이름으로 처방약 검색
             Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
             if (prescription == null) {
-                responseJson.put("status", "error");
-                responseJson.put("error_message", hospitalName + " 병원의 처방약이 데이터베이스에 없습니다.");
-                return responseJson.toString();
+                response.put("status", "error");
+                response.put("error_message", hospitalName + " 병원의 처방약이 데이터베이스에 없습니다.");
+                return response;
             }
 
             // 4. 처방약 정보 JSON 반환
@@ -52,37 +53,36 @@ public class PrescriptionService {
                     parseIntSafe(prescription.getLunch()) +
                     parseIntSafe(prescription.getDinner());
 
-            responseJson.put("status", "success");
-            responseJson.put("hospital_name", prescription.getHospitalName());
-            responseJson.put("total_days", prescription.getTotalDays());
-            responseJson.put("total_bags", totalBags);
-            responseJson.put("message", prescription.getHospitalName() +
+            response.put("status", "success");
+            response.put("hospital_name", prescription.getHospitalName());
+            response.put("total_bags", totalBags);
+            response.put("message", prescription.getHospitalName() +
                     " 처방약입니다. 아침, 점심, 저녁 식후 30분 " +
                     prescription.getTotalDays() + "일치로 총 " + totalBags + "봉투로 이루어져 있습니다.");
-            return responseJson.toString();
+            return response;
 
         } catch (Exception e) {
-            responseJson.put("status", "error");
-            responseJson.put("error_message", "처리 중 오류가 발생했습니다: " + e.getMessage());
-            return responseJson.toString();
+            response.put("status", "error");
+            response.put("error_message", "처리 중 오류가 발생했습니다: " + e.getMessage());
+            return response;
         }
     }
 
     // 복용 상태 업데이트
-    public String updateDosage(String hospitalName, String timeOfDay) {
-        JSONObject responseJson = new JSONObject();
+    public Map<String, Object> updateDosage(String hospitalName, String timeOfDay) {
+        Map<String, Object> response = new HashMap<>();
 
         try {
             Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
 
             if (prescription == null) {
-                responseJson.put("status", "error");
-                responseJson.put("error_message", "해당 병원의 처방약이 없습니다.");
-                return responseJson.toString();
+                response.put("status", "error");
+                response.put("error_message", "해당 병원의 처방약이 없습니다.");
+                return response;
             }
 
             // 해당 시간대 복용 개수 감소
-//            int remainingDoses = decreaseDosage(prescription, timeOfDay);
+            int remainingDoses = decreaseDosage(prescription, timeOfDay);
 
             // 남은 봉투 계산
             int morningRemaining = parseIntSafe(prescription.getMorning());
@@ -94,20 +94,20 @@ public class PrescriptionService {
             prescriptionRepository.save(prescription);
 
             // 결과 JSON 반환
-            responseJson.put("status", "success");
-            responseJson.put("hospital_name", prescription.getHospitalName());
-            responseJson.put("time_of_day", timeOfDay);
-            responseJson.put("remaining_bags", totalRemainingBags);
-            responseJson.put("message", String.format(
+            response.put("status", "success");
+            response.put("hospital_name", prescription.getHospitalName());
+            response.put("time_of_day", timeOfDay);
+            response.put("remaining_bags", totalRemainingBags);
+            response.put("message", String.format(
                     "약 복용 완료. %s 복용 후 남은 봉투: 총 %d개 (아침: %d개, 점심: %d개, 저녁: %d개)",
                     timeOfDay, totalRemainingBags, morningRemaining, lunchRemaining, dinnerRemaining
             ));
-            return responseJson.toString();
+            return response;
 
         } catch (Exception e) {
-            responseJson.put("status", "error");
-            responseJson.put("error_message", "처리 중 오류가 발생했습니다: " + e.getMessage());
-            return responseJson.toString();
+            response.put("status", "error");
+            response.put("error_message", "처리 중 오류가 발생했습니다: " + e.getMessage());
+            return response;
         }
     }
 
