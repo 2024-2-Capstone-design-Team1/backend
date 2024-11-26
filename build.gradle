@@ -3,6 +3,9 @@ plugins {
 	id 'org.springframework.boot' version '3.3.4'
 	id 'io.spring.dependency-management' version '1.1.6'
 }
+springBoot {
+	mainClass = 'com.project.server.ServerApplication' // 메인 클래스 경로로 수정
+}
 
 group = 'com.project'
 version = '0.0.1-SNAPSHOT'
@@ -35,6 +38,10 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.json:json:20230227'
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+
 
 
 
@@ -47,11 +54,27 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter:1.2.8.RELEASE'
 }
 
+ext {
+	set('springCloudVersion', "2021.0.3")
+}
+
 jar {
 	enabled = false
 }
 
+dependencyManagement {
+
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:2023.0.3"
+	}
+
+}
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+
+tasks.named('bootJar') {
+	mainClass = 'com.project.server.ServerApplication' // 메인 클래스 경로를 지정
 }

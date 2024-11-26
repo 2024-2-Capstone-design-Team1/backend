@@ -1,13 +1,12 @@
 package com.project.server.controller;
 
-
 import com.project.server.service.VisionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/vision")
@@ -21,14 +20,18 @@ public class VisionController {
     }
 
     @PostMapping("/extract-text")
-    public String extractText(@RequestParam("image") MultipartFile imageFile) {
+    public ResponseEntity<Map<String, Object>> extractText(@RequestParam("image") MultipartFile imageFile) {
         try {
-            byte[] imageBytes = imageFile.getBytes();
-            return visionService.extractTextFromImage(imageBytes);
+            Map<String, Object> response = visionService.extractTextAsJson(imageFile);
+            if ("error".equals(response.get("status"))) {
+                return ResponseEntity.badRequest().body(response);
+            }
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            e.printStackTrace();
-            return "Error processing image.";
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "error_message", "이미지 처리 중 오류가 발생했습니다."
+            ));
         }
     }
 }
-

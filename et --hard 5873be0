@@ -1,0 +1,37 @@
+[33m5899645[m[33m ([m[1;36mHEAD -> [m[1;32msecret설정[m[33m)[m HEAD@{0}: reset: moving to 58996458ad762c638cfa3d4bdeb33fb6968e8f12
+[33m5873be0[m HEAD@{1}: commit (amend): final commit
+[33me2fed15[m HEAD@{2}: commit (amend): final commit
+[33md45a3e5[m HEAD@{3}: commit: final commit
+[33mab7c351[m HEAD@{4}: commit: final commit
+[33ma2685f3[m HEAD@{5}: commit: 미사용 import문 제거
+[33m1945d59[m HEAD@{6}: commit: 시크릿 설정 제거, 키제거
+[33mda74577[m[33m ([m[1;32maa[m[33m)[m HEAD@{7}: checkout: moving from aa to secret설정
+[33mda74577[m[33m ([m[1;32maa[m[33m)[m HEAD@{8}: commit: 로깅 구현
+[33m6c22416[m HEAD@{9}: commit: open ai키 secret설정
+[33m568cfc1[m HEAD@{10}: commit: open ai키 secret설정
+[33m8ada5a8[m HEAD@{11}: commit: 추천기능 추가
+[33m2e67399[m HEAD@{12}: pull: Fast-forward
+[33me475280[m HEAD@{13}: checkout: moving from no_key to aa
+[33m0f57d57[m[33m ([m[1;32mno_key[m[33m)[m HEAD@{14}: commit (merge): 약등록 기능 데모
+[33mb9b881e[m HEAD@{15}: commit: 약등록 기능 데모
+[33m1be9e3a[m HEAD@{16}: checkout: moving from sjh to no_key
+[33m0f3f85c[m[33m ([m[1;32msjh[m[33m)[m HEAD@{17}: checkout: moving from main to sjh
+[33m3f8e015[m[33m ([m[1;32mmain[m[33m)[m HEAD@{18}: commit: dd
+[33mb84350a[m HEAD@{19}: commit: test3
+[33m2bd3955[m HEAD@{20}: commit: test2
+[33m6ca927b[m HEAD@{21}: commit: test2
+[33m0aa3ab7[m HEAD@{22}: commit: test
+[33m936c4d2[m HEAD@{23}: checkout: moving from temp to main
+[33mb3d5083[m[33m ([m[1;32mtemp[m[33m)[m HEAD@{24}: commit: temp
+[33m936c4d2[m HEAD@{25}: checkout: moving from main to temp
+[33m936c4d2[m HEAD@{26}: commit: 빌드 수정
+[33mfcd6c4e[m HEAD@{27}: commit: 빌드 수정
+[33m3a778bd[m HEAD@{28}: commit: 테스트 코드 추가
+[33mb6f244a[m HEAD@{29}: commit: CI/CD 적용
+[33m961d8dc[m HEAD@{30}: commit: CI/CD 테스트
+[33m485b2ec[m HEAD@{31}: commit: CI/CD 적용
+[33md1d2a3a[m HEAD@{32}: commit: 상비약 등록 삭제 수정api작성
+[33m8b512be[m HEAD@{33}: commit: 초기환경 설정 및 테스트
+[33m1d208e8[m HEAD@{34}: commit: 초기환경 설정 및 테스트
+[33mbeab24a[m HEAD@{35}: Branch: renamed refs/heads/master to refs/heads/main
+[33mbeab24a[m HEAD@{37}: commit (initial): first commit

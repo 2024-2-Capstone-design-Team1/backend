@@ -90,6 +90,20 @@ public class PrescriptionService {
             int dinnerRemaining = parseIntSafe(prescription.getDinner());
             int totalRemainingBags = morningRemaining + lunchRemaining + dinnerRemaining;
 
+            if (morningRemaining == 0 && lunchRemaining == 0 && dinnerRemaining == 0) {
+                // 데이터 삭제
+                prescriptionRepository.delete(prescription);
+                response.put("status", "success");
+                response.put("hospital_name", prescription.getHospitalName());
+                response.put("time_of_day", timeOfDay);
+                response.put("remaining_bags", totalRemainingBags);
+                response.put("morning", morningRemaining);
+                response.put("lunch", lunchRemaining);
+                response.put("dinner", dinnerRemaining);
+                response.put("message", String.format("모든 복용량이 소진되어 '%s' 처방약 데이터가 삭제되었습니다.", hospitalName));
+                return response;
+            }
+
             // 데이터베이스 저장
             prescriptionRepository.save(prescription);
 
@@ -98,6 +112,9 @@ public class PrescriptionService {
             response.put("hospital_name", prescription.getHospitalName());
             response.put("time_of_day", timeOfDay);
             response.put("remaining_bags", totalRemainingBags);
+            response.put("morning", morningRemaining);
+            response.put("lunch", lunchRemaining);
+            response.put("dinner", dinnerRemaining);
             response.put("message", String.format(
                     "약 복용 완료. %s 복용 후 남은 봉투: 총 %d개 (아침: %d개, 점심: %d개, 저녁: %d개)",
                     timeOfDay, totalRemainingBags, morningRemaining, lunchRemaining, dinnerRemaining
@@ -134,6 +151,40 @@ public class PrescriptionService {
 
         return remainingDoses;
     }
+    public Map<String, Object> getPrescriptionCount(String hospitalName) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            System.out.println(hospitalName);
+            Prescription prescription = prescriptionRepository.findByHospitalName(hospitalName);
+
+            if (prescription == null) {
+                response.put("status", "error");
+                response.put("error_message", "해당 병원의 처방약이 없습니다.");
+                return response;
+            }
+
+            int morningCount = parseIntSafe(prescription.getMorning());
+            int lunchCount = parseIntSafe(prescription.getLunch());
+            int dinnerCount = parseIntSafe(prescription.getDinner());
+            int totalBags = parseIntSafe(prescription.getMorning()) +
+                    parseIntSafe(prescription.getLunch()) +
+                    parseIntSafe(prescription.getDinner());
+
+            response.put("status", "success");
+            response.put("hospital_name", hospitalName);
+            response.put("total_bags", totalBags);
+            response.put("morning", morningCount);
+            response.put("lunch", lunchCount);
+            response.put("dinner", dinnerCount);
+            response.put("message", "반환되었습니다.");
+            return response;
+
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("error_message", "처방전 개수 확인 중 오류가 발생했습니다: " + e.getMessage());
+            return response;
+        }
+    }
 
     // 텍스트에서 특정 키 값 추출
     private String extractValue(String text, String key) {
@@ -145,6 +196,8 @@ public class PrescriptionService {
         }
         return ""; // 기본값 반환
     }
+
+    // 처방전 약 개수 확인
 
     // null-safe Integer 파싱
     private int parseIntSafe(String value) {

@@ -48,4 +48,17 @@ public class PrescriptionController {
             ));
         }
     }
+
+    @GetMapping("/count")
+    public ResponseEntity<Map<String, Object>> getPrescriptionCount(@RequestParam("hospitalName") String hospitalName) {
+        try {
+            Map<String, Object> response = prescriptionService.getPrescriptionCount(hospitalName);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "error_message", "처방전 조회 중 오류가 발생했습니다."
+            ));
+        }
+    }
 }
