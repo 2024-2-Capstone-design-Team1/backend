@@ -8,7 +8,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class GPTConfig {
 
-    @Value("${gpt.api.key}")
+    @Value("${OPENAI_API_KEY:default-key}")
     private String apiKey;
 
     @Bean
