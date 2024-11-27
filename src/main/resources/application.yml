@@ -5,10 +5,14 @@ spring:
 
 openai-service:
 <<<<<<< HEAD
+<<<<<<< HEAD
   api-key:
 =======
   api-key:
 >>>>>>> 568cfc1 (open ai키 secret설정)
+=======
+  api-key:
+>>>>>>> 1945d59 (시크릿 설정 제거, 키제거)
   gpt-model: gpt-3.5-turbo
   audio-model: whisper-1
   http-client:

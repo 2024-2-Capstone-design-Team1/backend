@@ -26,7 +26,7 @@ public class OpenAIClientConfig {
     @Value("${openai-service.http-client.connect-timeout}")
     private int connectTimeout;
 
-    @Value("${OPENAI_API_KEY:default-key}")
+    @Value("${openai-service.api-key}")
     private String apiKey;
 
     @Value("${openai-service.gpt-model}")
