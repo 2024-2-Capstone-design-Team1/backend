@@ -29,6 +29,12 @@ public class PrescriptionService {
             // 1. 이미지에서 텍스트 추출
             String extractedText = visionService.extractTextFromImage(imageBytes);
 
+            if (extractedText == null || extractedText.isEmpty()) {
+                response.put("status", "error");
+                response.put("error_message", "이미지에서 텍스트를 식별할 수 없습니다. 이미지 품질이 낮거나 텍스트가 포함되어 있지 않을 수 있습니다. 다시 시도해주세요.");
+                return response; // 에러 메시지 반환
+            }
+
             // 2. GPT를 사용해 병원 이름 추출
             String prompt = extractedText + "\n\n위 내용을 기반으로 병원 이름만 반환해줘. 예시 형식: 병원이름: [병원명]";
             String gptResponse = gptService.getGPTResponse(prompt);
@@ -56,9 +62,8 @@ public class PrescriptionService {
             response.put("status", "success");
             response.put("hospital_name", prescription.getHospitalName());
             response.put("total_bags", totalBags);
-            response.put("message", prescription.getHospitalName() +
-                    " 처방약입니다. 아침, 점심, 저녁 식후 30분 " +
-                    prescription.getTotalDays() + "일치로 총 " + totalBags + "봉투로 이루어져 있습니다.");
+            response.put("message",
+                    prescription.getTotalDays() + "일치로 현재 잔여량은 총" + totalBags + "봉투입니다.");
             return response;
 
         } catch (Exception e) {
@@ -116,8 +121,8 @@ public class PrescriptionService {
             response.put("lunch", lunchRemaining);
             response.put("dinner", dinnerRemaining);
             response.put("message", String.format(
-                    "약 복용 완료. %s 복용 후 남은 봉투: 총 %d개 (아침: %d개, 점심: %d개, 저녁: %d개)",
-                    timeOfDay, totalRemainingBags, morningRemaining, lunchRemaining, dinnerRemaining
+                    "약 복용 완료. %s 복용 후 남은 봉투: 총 %d개 ",
+                    timeOfDay, totalRemainingBags
             ));
             return response;
 
@@ -133,15 +138,15 @@ public class PrescriptionService {
         int remainingDoses;
 
         switch (timeOfDay.toLowerCase()) {
-            case "morning":
+            case "아침":
                 remainingDoses = parseIntSafe(prescription.getMorning()) - 1;
                 prescription.setMorning(String.valueOf(Math.max(remainingDoses, 0)));
                 break;
-            case "lunch":
+            case "점심":
                 remainingDoses = parseIntSafe(prescription.getLunch()) - 1;
                 prescription.setLunch(String.valueOf(Math.max(remainingDoses, 0)));
                 break;
-            case "dinner":
+            case "저녁":
                 remainingDoses = parseIntSafe(prescription.getDinner()) - 1;
                 prescription.setDinner(String.valueOf(Math.max(remainingDoses, 0)));
                 break;

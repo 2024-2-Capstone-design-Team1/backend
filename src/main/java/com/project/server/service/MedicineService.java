@@ -12,7 +12,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.hibernate.internal.util.config.ConfigurationHelper.extractValue;
 
@@ -85,8 +87,21 @@ public class MedicineService {
             // 1. 이미지에서 텍스트 추출
             String extractedText = visionService.extractTextFromImage(imageBytes);
 
+            if (extractedText == null || extractedText.isEmpty()) {
+                response.put("status", "error");
+                response.put("error_message", "이미지에서 텍스트를 식별할 수 없습니다. 이미지 품질이 낮거나 텍스트가 포함되어 있지 않을 수 있습니다. 다시 시도해주세요.");
+                return response; // 에러 메시지 반환
+            }
+
             // 2. GPT API 호출
-            String prompt = extractedText + "\n\n위의 내용을 기반으로 가장 유사한 상비약의 이름을 알려줘. 예시 형식: 이름: [약 이름]";
+
+            List<Medicine_df> allDfMedicines = medicineDfRepository.findAll();
+            String dfData = allDfMedicines.stream()
+                    .map(df -> "이름: " + df.getName() + ", 설명: " + df.getDescription())
+                    .collect(Collectors.joining("; "));
+
+            // 4. 상비약 로직 실행
+            String prompt = "medicine_df 데이터:  "+ dfData + "를 참고하여 다음의 내용을 기반으로\n\n " + extractedText + " 가장 유사한 상비약의 이름과 효능/효과를 간단히 알려줘. 예시 형식: 이름: [약 이름]\n";
             String gptResponse = gptService.getGPTResponse(prompt);
 
             // 3. GPT 응답에서 약 이름 추출
@@ -94,6 +109,33 @@ public class MedicineService {
             String medicineName = medicineNameRaw.split("[\\(\\d\\s]")[0];
 
             // 4. 데이터베이스에서 약 조회 및 삭제
+            Medicine medicine = medicineRepository.findByName(medicineName);
+
+            if (medicine != null) {
+                medicineRepository.delete(medicine);
+
+                response.put("status", "success");
+                response.put("name", medicineName);
+                response.put("message", "삭제 완료");
+                return response;
+            }
+
+            response.put("status", "not_found");
+            response.put("name", medicineName);
+            response.put("message", "해당 이름의 상비약을 찾을 수 없습니다.");
+            return response;
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("error_message", "오류 발생: " + e.getMessage());
+            return response;
+        }
+    }
+
+    public Map<String, Object> deleteMedicineByText(String medicineName) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // 3. 데이터베이스에서 약 조회 및 삭제
             Medicine medicine = medicineRepository.findByName(medicineName);
             if (medicine != null) {
                 medicineRepository.delete(medicine);
@@ -110,11 +152,11 @@ public class MedicineService {
             return response;
         } catch (Exception e) {
             response.put("status", "error");
-            response.put("name", "");
-            response.put("message", "오류 발생: " + e.getMessage());
+            response.put("error_message", "오류 발생: " + e.getMessage());
             return response;
         }
     }
+
 
     private String extractValue(String[] parts, String key) {
         for (String part : parts) {

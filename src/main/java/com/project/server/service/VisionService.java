@@ -46,7 +46,12 @@ public class VisionService {
                         System.err.printf("Error: %s\n", res.getError().getMessage());
                         return null; // 오류 시 null 반환
                     }
-                    stringBuilder.append(res.getFullTextAnnotation().getText());
+                    String text = res.getFullTextAnnotation().getText();
+                    if (text == null || text.trim().isEmpty()) {
+                        System.err.println("Extracted text is empty or null.");
+                        return null; // 빈 텍스트인 경우 null 반환
+                    }
+                    stringBuilder.append(text);
                 }
                 return stringBuilder.toString();
             }
@@ -63,10 +68,21 @@ public class VisionService {
             String extractedText = extractTextFromImage(file);
             if (extractedText == null || extractedText.isEmpty()) {
                 response.put("status", "error");
-                response.put("error_message", "텍스트 추출에 실패했습니다.");
+                response.put("error_message", "식별에 실패했습니다.");
             } else {
                 response.put("status", "success");
                 response.put("extracted_text", extractedText);
+
+                // "아침", "점심", "저녁" 키워드 확인
+                if (extractedText.contains("아침")) {
+                    response.put("message", "아침");
+                } else if (extractedText.contains("점심")) {
+                    response.put("message", "점심");
+                } else if (extractedText.contains("저녁")) {
+                    response.put("message", "저녁");
+                } else {
+                    response.put("message", "특정 시간대와 관련된 키워드가 없습니다.");
+                }
             }
         } catch (Exception e) {
             response.put("status", "error");

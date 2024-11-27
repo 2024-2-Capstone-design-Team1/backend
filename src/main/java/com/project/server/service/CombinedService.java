@@ -1,7 +1,9 @@
 package com.project.server.service;
 
 import com.project.server.domain.Medicine;
+import com.project.server.domain.Medicine_df;
 import com.project.server.domain.Prescription;
+import com.project.server.repository.MedicineDfRepository;
 import com.project.server.repository.MedicineRepository;
 import com.project.server.repository.PrescriptionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CombinedService {
@@ -18,13 +22,15 @@ public class CombinedService {
     private final GPTService gptService;
     private final MedicineRepository medicineRepository;
     private final PrescriptionRepository prescriptionRepository;
+    private final MedicineDfRepository medicineDfRepository;
 
     @Autowired
-    public CombinedService(VisionService visionService, GPTService gptService, MedicineRepository medicineRepository, PrescriptionRepository prescriptionRepository) {
+    public CombinedService(VisionService visionService, GPTService gptService, MedicineRepository medicineRepository, PrescriptionRepository prescriptionRepository, MedicineDfRepository medicineDfRepository) {
         this.visionService = visionService;
         this.gptService = gptService;
         this.medicineRepository = medicineRepository;
         this.prescriptionRepository = prescriptionRepository;
+        this.medicineDfRepository = medicineDfRepository;
     }
 
     public ResponseEntity<Map<String, Object>> processImageWithGPT(byte[] imageBytes) {
@@ -33,6 +39,12 @@ public class CombinedService {
         try {
             // 1. 이미지에서 텍스트 추출
             String extractedText = visionService.extractTextFromImage(imageBytes);
+
+            if (extractedText == null || extractedText.isEmpty()) {
+                response.put("status", "error");
+                response.put("error_message", "식별에 실패했습니다.");
+                return ResponseEntity.badRequest().body(response);
+            }
 
             // 2. 처방약 로직 시도
             String prompt = extractedText + "\n\n위의 내용을 기반으로 다음 항목을 추출해줘:\n병원이름: 병원이름\n1일 총 투약횟수: 투약횟수 (숫자만)\n복용시간: (식전/식후)\n총일수: 일수 (숫자만)";
@@ -50,7 +62,7 @@ public class CombinedService {
                     response.put("status", "success");
                     response.put("type", "prescription");
                     response.put("name", hospitalName);
-                    response.put("message", "이미 등록됨");
+                    response.put("message", "이미 등록된 처방약");
                     return ResponseEntity.ok(response);
                 }
 
@@ -79,11 +91,22 @@ public class CombinedService {
                 return ResponseEntity.ok(response);
             }
 
-            prompt = extractedText + "\n\n위의 내용을 기반으로 가장 유사한 상비약의 이름과 효능/효과를 간단히 알려줘. 예시 형식: 이름: [약 이름]\n효능효과: [효능/효과]";
+            // 3. medicine_df 데이터 가져오기
+            List<Medicine_df> allDfMedicines = medicineDfRepository.findAll();
+            String dfData = allDfMedicines.stream()
+                    .map(df -> "이름: " + df.getName() + ", 설명: " + df.getDescription())
+                    .collect(Collectors.joining("; "));
+
+            // 4. 상비약 로직 실행
+            prompt = "medicine_df 데이터:  "+ dfData + "를 참고하여 다음의 내용을 기반으로\n\n " + extractedText + " 가장 유사한 상비약의 이름과 효능/효과를 간단히 알려줘. 예시 형식: 이름: [약 이름]\n효능효과: [효능/효과]";
             gptResponse = gptService.getGPTResponse(prompt);
 
             // 3. 상비약 로직 실행
-            String medicineName = extractValue(gptResponse.split("\n"), "이름");
+            // 3. 상비약 로직 실행
+            String medicineNameRaw = extractValue(gptResponse.split("\n"), "이름");
+            // () 또는 숫자 또는 띄어쓰기가 나오기 전까지만 추출
+            String medicineName = medicineNameRaw.split("[\\(\\d\\s]")[0];
+
             String efficacy = extractValue(gptResponse.split("\n"), "효능효과");
 
             if (medicineRepository.existsByName(medicineName)) {

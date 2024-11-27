@@ -1,7 +1,6 @@
 package com.project.server.openaiclient;
 
-import com.project.server.dto.request.WhisperTranscriptionRequest;
-import com.project.server.dto.response.WhisperTranscriptionResponse;
+
 import feign.Logger;
 import feign.Request;
 import feign.RequestInterceptor;

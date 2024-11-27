@@ -15,4 +15,5 @@ import java.io.Serializable;
 public class WhisperTranscriptionRequest implements Serializable{
     private String model;
     private MultipartFile file;
+    private String language;
 }
