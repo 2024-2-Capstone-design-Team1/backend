@@ -23,7 +23,7 @@ configurations {
 }
 
 repositories {
-	mavenCentral()
+	mavenCentral()git remote add origin https://github.com/2024-2-Capstone-design-Team1/backend.git
 	maven {url 'https://repo.spring.io/snapshot'} //스냅샷 저장소 추가
 }
 
